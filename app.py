@@ -44,6 +44,7 @@ list_names = df_secoes.groupby("NM_VOTAVEL").agg("sum")
 
 
 app = Dash(__name__)
+server = app.server
 
 app.layout = dbc.Container(children=[
     html.H1("Estatísticas Eleições 2020", className="text-primary"),
