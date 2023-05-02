@@ -54,7 +54,7 @@ app.layout = dbc.Container(children=[
             dcc.Graph(
                 figure=bar
             ),         
-        ], width=8, style={'height':'600px'}),#o componente ocupara um espaço 2 col de 12
+        ], xs=10, sm=8, md=5, lg=6, xl=5),
     ]),
     html.Hr(),#quebra de linha
     dbc.Row([
@@ -69,23 +69,25 @@ app.layout = dbc.Container(children=[
             ),
             html.Br(),  
             dcc.Graph(id='my-output'),         
-        ], md=12)#o componente ocupara um espaço 2 col de 12
+        ], xs=10, sm=8, md=5, lg=6, xl=5)
     ]),
     
     html.Hr(),
     dbc.Row([
-        html.H3("Votação por região e bairro", className="text-primary"),
-        dcc.Dropdown(
-            id="my-input-regiao-bairro",
-            options=list_names.index,
-            value="ABEL GAMA",
-            clearable=False,
-            style={"width":"40%"}
-        ),
-        html.Div(children=[
-            dcc.Graph(id="my-output-regiao", style={'display': 'inline-block'}),
-            dcc.Graph(id="my-output-bairro", style={'display': 'inline-block'})
-        ]),
+        dbc.Col([
+            html.H3("Votação por região e bairro", className="text-primary"),
+            dcc.Dropdown(
+                id="my-input-regiao-bairro",
+                options=list_names.index,
+                value="ABEL GAMA",
+                clearable=False,
+                style={"width":"40%"}
+            ),
+            html.Div(children=[
+                dcc.Graph(id="my-output-regiao", style={'display': 'inline-block'}),
+                dcc.Graph(id="my-output-bairro", style={'display': 'inline-block'})
+            ]),
+        ], xs=10, sm=8, md=5, lg=6, xl=5)
     ])
 ], fluid=True)
 
