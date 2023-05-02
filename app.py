@@ -22,6 +22,8 @@ bar = px.bar(df, x=df['Partido'], y=df['Votos_Validos'],
              color=df['Partido'], height=600, hover_data=['Nome_Urna'])
 
 
+df_pie = df.groupby('Partido').agg('sum')
+pie = px.pie(df, values=df['Votos_Validos'], names="Partido", hover_data=['Votos_Validos'], width=100)
 options_list = ["2000 ou mais votos",
                 "1500 a 1999 votos",
                 "1000 a 1499 votos",
@@ -33,37 +35,56 @@ options_list = ["2000 ou mais votos",
                 "1 a 49 votos"]
 
 
+
+df_secoes = pd.read_csv("votacao_2020_secoes.csv")
+list_names = df_secoes.groupby("NM_VOTAVEL").agg("sum")
+
+
+
+
+
 app = Dash(__name__)
 
 app.layout = dbc.Container(children=[
     html.H1("Estatísticas Eleições 2020", className="text-primary"),
     dbc.Row([
+        html.H3("Vereadores - Votação por Partido", className="text-primary"), 
         dbc.Col([
-            html.H3("Vereadores - Votação por Partido", className="text-primary"),
             dcc.Graph(
                 figure=bar
             ),         
-        ], md=8, style={'background-color': '', 'height':'600px'}),#o componente ocupara um espaço 2 col de 12
-
-        dbc.Col([
-            
-        ], md=4, style={'background-color': '', 'height':'0px'})
+        ], width=8, style={'height':'600px'}),#o componente ocupara um espaço 2 col de 12
     ]),
-    html.Hr(),#quebra de linha
     html.Hr(),#quebra de linha
     dbc.Row([
         dbc.Col([
-            html.H3("Votação por verador - Intervalos", className="text-primary"),
+            html.H3("Votação por vereador - Intervalos", className="text-primary"),
+            dcc.Dropdown(
+                id="my-input",
+                options=options_list,
+                value="150 a 249 votos",
+                clearable=False,
+                style={"width":"40%"}
+            ),
+            html.Br(),  
+            dcc.Graph(id='my-output'),         
+        ], md=12)#o componente ocupara um espaço 2 col de 12
+    ]),
+    
+    html.Hr(),
+    dbc.Row([
+        html.H3("Votação por região e bairro", className="text-primary"),
         dcc.Dropdown(
-            id="my-input",
-            options=options_list,
-            value="2000 ou mais votos",
+            id="my-input-regiao-bairro",
+            options=list_names.index,
+            value="ABEL GAMA",
             clearable=False,
             style={"width":"40%"}
         ),
-        html.Br(),  
-        dcc.Graph(id='my-output'),         
-        ], md=12, style={'background-color': '', 'height':'200px'}),#o componente ocupara um espaço 2 col de 12
+        html.Div(children=[
+            dcc.Graph(id="my-output-regiao", style={'display': 'inline-block'}),
+            dcc.Graph(id="my-output-bairro", style={'display': 'inline-block'})
+        ]),
     ])
 ], fluid=True)
 
@@ -91,10 +112,45 @@ def update_figure(option):
     elif option == "1 a 49 votos":
         filter = df[(df["Votos_Validos"] >= 0) & (df["Votos_Validos"] < 50)]
 
-    fig = px.bar(filter, x=filter['Nome'], y='Votos_Validos', height=900)
-
-
+    fig = px.bar(filter, x=filter['Nome'], y='Votos_Validos', height=600)
     fig.update_layout(transition_duration=500)
+  
+    return fig
+
+
+
+@app.callback(
+    Output('my-output-regiao', 'figure'),
+    Input('my-input-regiao-bairro', 'value'))
+def update_figure(option):
+    op = df_secoes[df_secoes["NM_VOTAVEL"] == option]
+    candidato = op.groupby("REGIAO").agg("sum")
+
+    fig = px.bar(candidato, x=candidato.index, y='QT_VOTOS', color=candidato.index)
+    fig.update_layout(
+        transition_duration=500,
+        autosize=False,
+        width=300,
+        height=600
+    )
+
+    return fig
+
+
+@app.callback(
+    Output('my-output-bairro', 'figure'),
+    Input('my-input-regiao-bairro', 'value'))
+def update_figure(option):
+    op = df_secoes[df_secoes["NM_VOTAVEL"] == option]
+    candidato = op.groupby("BAIRRO").agg("sum")
+
+    fig = px.bar(candidato, x=candidato.index, y='QT_VOTOS', color=candidato.index)
+    fig.update_layout(
+        transition_duration=500,
+        autosize=False,
+        width=900,
+        height=600
+    )
   
     return fig
 
