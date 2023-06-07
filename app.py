@@ -3,6 +3,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import pandas as pd
+import geopandas as gpd
 import json
 
 
@@ -73,167 +74,226 @@ list_bairros = df_secoes.groupby("BAIRRO").agg("sum").index
 app = Dash(__name__)
 server = app.server
 
-app.layout = dbc.Container(children=[
+app.layout = dbc.Container(children=[       
     html.Hr(),#quebra de linha
-    dbc.Row([
+       dbc.Row([
            html.H1("Estatísticas Eleições Municipais - Caraguatatuba-SP 2020", className="text-primary", style={"text-align":"center"}),
-           dbc.Col([
+           html.H5("Fonte: https://dadosabertos.tse.jus.br/dataset/resultados-2020/resource/5192162f-91ad-41fd-9aaf-869fdee9f9fa", className="text-primary", style={"text-align":"center"}),
+           html.H5("Votação por seção eleitoral - 2020", className="text-primary", style={"text-align":"center", "padding-top":"-5px"}),           
+           html.H5("by Daniel D. Pires", className="text-primary", style={"text-align":"center"}),
+           html.Div([
+               dbc.Col([
                dbc.Card([
                html.H3("Vereadores - Votação por Partido", className="text-primary"),           
-               ], style={"height":"100%", "padding":"20px"})
-           ], width=4),
-
-           dbc.Col(
-               dbc.Card(dcc.Graph(figure=bar, style={"height":"100%", "padding":"10px"})), width=8),
+                   ], style={"height":"100%", "padding":"20px"})
+               ], width=4),    
+               dbc.Col(
+                  dbc.Card(
+                    dcc.Graph(figure=bar, responsive=True, 
+                         style={
+                            "width": "68%",
+                            "height": "500px",
+                            "display": "inline-block",
+                            "border": "3px #5c5c5c solid",
+                            "padding-top": "5px",
+                            "padding-left": "1px",
+                            "overflow": "hidden",
+                         }
+                    ),style={'textAlign': 'center'}
+               ), width=12),
+           ],style={'textAlign': 'center'}),
        ], style={"margin":"10px"}),
 
 
     html.Hr(),#quebra de linha
-    dbc.Row([
-           dbc.Col([
-               dbc.Card([
-                   html.H3("Votação por vereador - Intervalos", className="text-primary"),
-                   html.Label("Intervalos"),
-                   html.Div(
-                       dcc.Dropdown(
-                           id="my-input",
-                           options=options_list,
-                           value="150 a 249 votos",
-                           clearable=False,
-                           style={"width":"40%"}
-                       ),
-                   ),
-               ], style={"height":"100%", "padding":"20px"})
-           ], width=4),
-
-           dbc.Col(
-               dbc.Card(dcc.Graph(id='my-output', style={"height":"100%", "padding":"10px"})), width=8),
-       ], style={"margin":"10px"}),
-    
-    html.Hr(),#quebra de linha
-    dbc.Row([
-           dbc.Col([
-               dbc.Card([
-                   html.H3("Distribuição de votos de um candidato por regiões e bairros", className="text-primary"),
-                   html.Label("Nome"),
-                   html.Div(
-                       dcc.Dropdown(
-                           id="my-input-regiao-bairro",
-                           options=list_names.index,
-                           value="ABEL GAMA",#["ABEL GAMA"],
-                           clearable=False,
-                           style={"width":"40%"},
-                           #multi=True
-                        ),
-                   ),
-               ], style={"height":"100%", "padding":"20px"})
-           ], width=4),
-
-           dbc.Col(
-               dbc.Card(
-                   html.Div(children=[
-                       dcc.Graph(id="my-output-regiao", style={'display': 'inline-block', "padding":"10px"}),
-                       dcc.Graph(id="my-output-bairro", style={'display': 'inline-block', "padding":"10px"})
+       dbc.Row([
+           html.H2("Votação dos vereadores por faixa de votos", className="text-primary", style={"text-align":"center"}),
+           html.Div([
+               #html.Label("Candidato"),
+                   html.Div([
+                       dbc.Card([
+                           #html.H3("Votação por vereador", className="text-primary"),
+                           html.Label("Intervalos"),
+                           html.Div(
+                               dcc.Dropdown(
+                                   id="my-input",
+                                   options=options_list,
+                                   value="150 a 249 votos",
+                                   clearable=False,
+                                   style={
+                                       "width": "40%",
+                                       "display": "inline-block",
+                                   },
+                               ),
+                           ),
+                       ], style={"height":"100%", "padding":"20px"})
                    ]),
-               ), width=8),
-       ], style={"margin":"10px"}),
+                dbc.Col(
+                dbc.Card(
+                    dcc.Graph(id="my-output", responsive=True, 
+                         style={
+                            "width": "68%",
+                            "height": "500px",
+                            "display": "inline-block",
+                            "border": "3px #5c5c5c solid",
+                            "padding-top": "5px",
+                            "padding-left": "1px",
+                            "overflow": "hidden",
+                         }
+                    ),style={'textAlign': 'center'}
+               ), width=12),
+           ],style={'textAlign': 'center'}),
+       ], style={"margin":"10px"}),   
 
     html.Hr(),#quebra de linha
-    dbc.Row([
-           dbc.Col([
-               dbc.Card([
-                   html.H3("10 + votados por cargo em um determinado bairro", className="text-primary"),
-                   html.Label("Cargo"),
-                   html.Div(
-                       dcc.Dropdown(
-                           id="my-input-cargo",
-                           options=["Prefeito","Vereador"],
-                           value="Prefeito",
-                           clearable=False,
-                           style={"width": "40%"},
-                           #persistence=True,
-                           #persistence_type="session",
-                           #multi=True#permite selecionar mais de uma opção simultaneamente
+       dbc.Row([
+           html.H2("Distribuição de votos de um candidato por regiões e bairros", className="text-primary", style={"text-align":"center"}),
+           html.Div([
+                dbc.Col([
+                   dbc.Card([
+                       #html.H3("", className="text-primary"),
+                       html.Label("Nome"),
+                       html.Div(
+                           dcc.Dropdown(
+                               id="my-input-regiao-bairro",
+                               options=list_names.index,
+                               value="ABEL GAMA",#["ABEL GAMA"],
+                               clearable=False,
+                               style={
+                                   "width": "40%",
+                                   "display": "inline-block",
+                               },
+                           ),
                        ),
-                   ),
-
-                   html.Label("Bairro", style={"margin-top":"10px"}),
-                   html.Div(
-                       dcc.Dropdown(
-                           id="my-input-bairro",
-                           options=list_bairros,
-                           value=list_bairros[0],
-                           clearable=False,
-                           style={"width": "40%"},
-                           #persistence=True,
-                           #persistence_type="session",
-                           #multi=True#permite selecionar mais de uma opção simultaneamente
+                   ], style={"height":"100%", "padding":"20px"})
+           ], width=4), 
+                dbc.Col(
+                dbc.Card(
+                    html.Div(children=[
+                       dcc.Graph(id="my-output-regiao", responsive=True, 
+                         style={
+                            "width": "25%",
+                            "height": "500px",
+                            "display": "inline-block",
+                            "border": "3px #5c5c5c solid",
+                            "padding-top": "5px",
+                            "padding-left": "1px",
+                            "overflow": "hidden",
+                         }
                        ),
-                   ),
-               ], style={"height":"100%", "padding":"20px"})
-           ], width=4),
-
-           dbc.Col(
-               dbc.Card(dcc.Graph(id='my-output-cargo-bairro', style={"height":"100%", "padding":"10px"})), width=8),
+                       dcc.Graph(id="my-output-bairro", responsive=True, 
+                         style={
+                            "width": "65%",
+                            "height": "500px",
+                            "display": "inline-block",
+                            "border": "3px #5c5c5c solid",
+                            "padding-top": "5px",
+                            "padding-left": "1px",
+                            "overflow": "hidden",
+                         }
+                       ), 
+                    ],style={'textAlign': 'center'}),
+               ), width=12),
+           ],style={'textAlign': 'center'}),
+       ], style={"margin":"10px"}),  
+   
+       html.Hr(),#quebra de linha
+       dbc.Row([
+           html.H2("Disputa entre pares de candidatos", className="text-primary", style={"text-align":"center"}),
+           html.Div([
+               #html.Label("Candidato"),
+                   html.Div([
+                       html.Label("Candidato 1"),
+                       dbc.Col(children=[
+                           html.Div(
+                           dcc.Dropdown(
+                               id="input-candidato-1",
+                               options=list_names.index,
+                               value="ABEL GAMA",
+                               clearable=False,
+                               style={
+                                   "width": "40%",
+                                   "display": "inline-block",
+                               },
+                               #persistence=True,
+                               #persistence_type="session",
+                               #multi=True#permite selecionar mais de uma opção simultaneamente
+                               ),
+                           ),    
+                       ], width=6),
+                       html.Label("X", style={"margin-top":"10px"}),
+                       dbc.Col(children=[
+                           html.Label("Candidato 2", style={"margin-top":"10px"}),
+                           html.Div(
+                               dcc.Dropdown(
+                                   id="input-candidato-2",
+                                   options=list_names.index,
+                                   value="AGUINALDO BROW",
+                                   clearable=False,
+                                   style={
+                                       "width": "40%",
+                                       "display": "inline-block",
+                                   },
+                                    #persistence=True,
+                                    #persistence_type="session",
+                                    #multi=True#permite selecionar mais de uma opção simultaneamente
+                               ),
+                           ),        
+                       ], width=6),
+                   ],style={"width":"100%"}),
+                   dbc.Col(
+                       dbc.Card(
+                            dcc.Graph(id="chloropleth-map", responsive=True, 
+                                style={
+                                    "width": "68%",
+                                    "height": "600px",
+                                    "display": "inline-block",
+                                    "border": "3px #5c5c5c solid",
+                                    "padding-top": "5px",
+                                    "padding-left": "1px",
+                                    "overflow": "hidden",
+                                }
+                            ),style={'textAlign': 'center'}
+                    ), width=12),
+            ],style={'textAlign': 'center'}),
        ], style={"margin":"10px"}),
+
 
        html.Hr(),#quebra de linha
        dbc.Row([
-           html.H1("Candidato x Candidato", className="text-primary", style={"text-align":"center"}),
+           html.H2("Distribuição de votos  por bairros", className="text-primary", style={"text-align":"center"}),
            html.Div([
-                   html.Label("Candidato 1"),
-                   html.Div(
-                       dcc.Dropdown(
-                           id="input-candidato-1",
-                           options=list_names.index,
-                           value="ABEL GAMA",
-                           clearable=False,
-                           style={"width": "40%"},
-                           #persistence=True,
-                           #persistence_type="session",
-                           #multi=True#permite selecionar mais de uma opção simultaneamente
-                       ),
-                   ),
-
-                   html.Label("Candidato 2", style={"margin-top":"10px"}),
-                   html.Div(
-                       dcc.Dropdown(
-                           id="input-candidato-2",
-                           options=list_names.index,
-                           value="AGUINALDO BROW",
-                           clearable=False,
-                           style={"width": "40%"},
-                           #persistence=True,
-                           #persistence_type="session",
-                           #multi=True#permite selecionar mais de uma opção simultaneamente
-                       ),
-                   ),
-       ]),
-           dbc.Col(
-               dbc.Card(dcc.Graph(id="chloropleth-map", style={"height":"100%", "padding":"10px"})), width=8),
-       ], style={"margin":"10px"}),
-
-
-       html.Hr(),#quebra de linha
-       dbc.Row([
-           html.H1("Candidato", className="text-primary", style={"text-align":"center"}),
-           html.Div([
-                   html.Label("Candidato"),
-                   html.Div(
+               #html.Label("Candidato"),
+                   html.Div([
                        dcc.Dropdown(
                            id="input-candidato",
                            options=list_names.index,
                            value="ABEL GAMA",
                            clearable=False,
-                           style={"width": "40%"},
+                           style={
+                               "width": "40%",
+                               "display": "inline-block",
+                           },
                            #persistence=True,
                            #persistence_type="session",
                            #multi=True#permite selecionar mais de uma opção simultaneamente
                        ),
-                   ),
-       ]),
-           dbc.Col(
-               dbc.Card(dcc.Graph(id="chloropleth-map2", style={"height":"100%", "padding":"10px"})), width=8),
+                   ],style={}),
+                dbc.Col(
+                dbc.Card(
+                    dcc.Graph(id="chloropleth-map2", responsive=True, 
+                         style={
+                            "width": "68%",
+                            "height": "600px",
+                            "display": "inline-block",
+                            "border": "3px #5c5c5c solid",
+                            "padding-top": "5px",
+                            "padding-left": "1px",
+                            "overflow": "hidden",
+                         }
+                    ),style={'textAlign': 'center'}
+               ), width=12),
+           ],style={'textAlign': 'center'}),
        ], style={"margin":"10px"}),
 
     ])
@@ -307,27 +367,6 @@ def update_figure(option):
     )
   
     return fig
-
-
-@app.callback(
-    Output('my-output-cargo-bairro', 'figure'),
-    Input('my-input-cargo', 'value'),
-    Input('my-input-bairro', 'value'))
-def update_figure(cargo, bairro):
-    df_bairro = df_secoes[(df_secoes["BAIRRO"] == bairro) & (df_secoes["DS_CARGO_PERGUNTA"] == cargo)]
-    df_bairro_agrup = df_bairro.groupby("NM_VOTAVEL").agg("sum")
-    df_output = df_bairro_agrup.sort_values('QT_VOTOS', ascending=False).head(10)
-
-    fig = px.bar(df_output, x=df_output.index, y='QT_VOTOS', orientation="v")
-    fig.update_layout(
-        transition_duration=500,
-        autosize=False,
-        #width=1200,
-        #height=900
-    )
-  
-    return fig
-
 
 
 @app.callback(
