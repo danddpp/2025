@@ -6,6 +6,8 @@ import pandas as pd
 import json
 
 
+
+
 votacao_por_bairros_df = pd.read_csv('votacao_por_bairros.csv')
 
 #token = open(".mapbox_token").read()
@@ -72,6 +74,7 @@ list_bairros = df_secoes.groupby("BAIRRO").agg("sum").index
 
 app = Dash(__name__)
 server = app.server
+#app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
 
 app.layout = dbc.Container(children=[       
     html.Hr(),#quebra de linha
@@ -202,9 +205,9 @@ app.layout = dbc.Container(children=[
            html.Div([
                #html.Label("Candidato"),
                    html.Div([
-                       html.Label("Candidato 1"),
+                       #html.Label("Candidato 1", style={"margin-top":"10px", "textAlign":"left"}),
                        dbc.Col(children=[
-                           html.Div(
+                           html.Div([
                            dcc.Dropdown(
                                id="input-candidato-1",
                                options=list_names.index,
@@ -218,12 +221,28 @@ app.layout = dbc.Container(children=[
                                #persistence_type="session",
                                #multi=True#permite selecionar mais de uma opção simultaneamente
                                ),
-                           ),    
-                       ], width=6),
-                       html.Label("X", style={"margin-top":"10px"}),
+                               dbc.Card(
+                                   [dbc.CardHeader(
+                                       "Total de Votos",
+                                   ),
+                                   dcc.Input(
+                                       id="output-qt-votos-c1",
+                                       style={
+                                           "textAlign": "center",
+                                           "border": 0 
+                                       },
+                                   )], style={
+                                           "width": "40%",
+                                           "display": "inline-block",
+                                           "padding-bottom": "10px" 
+                                       },
+                               ),
+                            ]),    
+                       ], width=12),
+                       html.Label("X", style={"margin-top":"10px", "textAlign":"left"}),
                        dbc.Col(children=[
-                           html.Label("Candidato 2", style={"margin-top":"10px"}),
-                           html.Div(
+                           #html.Label("Candidato 2", style={"margin-top":"10px", "textAlign":"left"}),
+                           html.Div([
                                dcc.Dropdown(
                                    id="input-candidato-2",
                                    options=list_names.index,
@@ -237,8 +256,24 @@ app.layout = dbc.Container(children=[
                                     #persistence_type="session",
                                     #multi=True#permite selecionar mais de uma opção simultaneamente
                                ),
-                           ),        
-                       ], width=6),
+                               dbc.Card(
+                                   [dbc.CardHeader(
+                                       "Total de Votos",
+                                   ),
+                                   dcc.Input(
+                                       id="output-qt-votos-c2",
+                                       style={
+                                           "textAlign": "center",
+                                           "border": 0 
+                                       },
+                                   )], style={
+                                           "width": "40%",
+                                           "display": "inline-block",
+                                           "padding-bottom": "10px" 
+                                       },
+                               ),
+                            ]),        
+                       ], width=12),
                    ],style={"width":"100%"}),
                    dbc.Col(
                        dbc.Card(
@@ -277,7 +312,24 @@ app.layout = dbc.Container(children=[
                            #persistence_type="session",
                            #multi=True#permite selecionar mais de uma opção simultaneamente
                        ),
-                   ],style={}),
+                       dbc.Card(
+                           [dbc.CardHeader(
+                               "Total de  Votos",
+                           ),
+                           dcc.Input(
+                               id="output-qt-votos",
+                               style={
+                                   "textAlign": "center",
+                                   "border": 0 
+                               },
+                           )],
+                           style={
+                               "width": "40%",
+                               "display": "inline-block",
+                               "padding-bottom": "10px" 
+                           },
+                       )
+                   ]),
                 dbc.Col(
                 dbc.Card(
                     dcc.Graph(id="chloropleth-map2", responsive=True, 
@@ -412,8 +464,6 @@ def update_chloroleth_map(c1, c2):
             bairros_csv['QT_VOTOS_1º'][b] = 0
             bairros_csv['QT_VOTOS_2º'][b] = 0 
     
-    #print(bairros_csv)
-
 
     fig = px.choropleth_mapbox(
         data_frame=bairros_csv,#dataframe com os dados 
@@ -445,7 +495,7 @@ def update_chloroleth_map(c1):
     candidato1 = df_secoes[df_secoes['NM_VOTAVEL'] == c1]
     votos_bairro = candidato1.groupby("BAIRRO").agg("sum")
     votos_bairro['BAIRRO'] = votos_bairro.index 
-    print(votos_bairro)
+    #print(votos_bairro)
     #df_out = bairros_geo_ok.rename(columns={'BAIRRO':'nome_bairr'})
     fig = px.choropleth_mapbox(
         data_frame=votos_bairro,#dataframe com os dados 
@@ -465,6 +515,46 @@ def update_chloroleth_map(c1):
     )
     return fig
 
+
+
+
+#qtde de votos disputa c1 x c2 - candidato 1
+@app.callback(
+    Output('output-qt-votos-c1', 'value'),
+    Input('input-candidato-1', 'value'),
+)
+def qtde_votos(c1):
+    votos_candidato_1 = df_secoes[df_secoes['NM_VOTAVEL'] == c1]
+    soma_votos = votos_candidato_1['QT_VOTOS'].sum()
+    
+    return soma_votos
+
+#qtde de votos disputa c1 x c2 - candidato 2
+@app.callback(
+    Output('output-qt-votos-c2', 'value'),
+    Input('input-candidato-2', 'value'),
+)
+def qtde_votos(c2):
+    votos_candidato_2 = df_secoes[df_secoes['NM_VOTAVEL'] == c2]
+    soma_votos = votos_candidato_2['QT_VOTOS'].sum()
+    
+    return soma_votos
+
+
+
+
+
+
+#qtde de votos distribuição por bairros
+@app.callback(
+    Output('output-qt-votos', 'value'),
+    Input('input-candidato', 'value'),
+)
+def qtde_votos(c):
+    votos_candidato = df_secoes[df_secoes['NM_VOTAVEL'] == c]
+    soma_votos = votos_candidato['QT_VOTOS'].sum()
+    
+    return soma_votos
 
 
 if __name__ == '__main__':
